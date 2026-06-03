@@ -55,7 +55,8 @@ Scenario C: Passing multiple columns using spaces
         %let col = %scan(&fields., &i., %str(| )); 
 
         %do %while ("&col." ne "");
-
+        length _extracted_&col. $50.;
+        
             &col._num = .; 
             _extracted_&col. = "";
             _start_pos_&col. = 0;
