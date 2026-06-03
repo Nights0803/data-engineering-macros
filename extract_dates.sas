@@ -15,14 +15,14 @@
              
   EXAMPLES:
   
-  /* Scenario A: Passing a single column */
+Scenario A: Passing a single column
   %extract_dates(
       data_in=WORK.raw_data, 
       data_out=WORK.cleaned_data, 
       fields=start_date
   );
   
-  /* Scenario B: Passing multiple columns using pipes */
+Scenario B: Passing multiple columns using pipes
   %let date_cols = start_date | end_date | updated_date;
   %extract_dates(
       data_in=WORK.raw_data, 
@@ -30,7 +30,7 @@
       fields=&date_cols.
   );
   
-  /* Scenario C: Passing multiple columns using spaces */
+Scenario C: Passing multiple columns using spaces
   %extract_dates(
       data_in=WORK.raw_data, 
       data_out=WORK.cleaned_data, 
