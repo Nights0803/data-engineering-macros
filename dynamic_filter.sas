@@ -74,7 +74,7 @@
                 
                 %if &j > 1 %then OR ;
                 
-                &subcol. IN (&current_val.)
+                &subcol. IN (%unquote(&current_val.))
             %end;
             )
         %end;
