@@ -25,7 +25,7 @@ data _null_;
     
     return; 
 
-        Build_Core_Nodes:
+    Build_Core_Nodes:
         file_path = cats(folder_path, "/INT_References.sas");
         if fileexist(file_path) = 0 then do;
             file dummy filevar=file_path;
@@ -70,7 +70,7 @@ data _null_;
         file dummy filevar=file_path; 
         
         put '/*==================================================*/';
-        line = cats('/* MASTER PLAYLIST: ', Short_Prog, '*/'); put line;
+        line = cats('/* MASTER PLAYLIST: ', Short_Prog, ' */'); put line;
         put '/* DO NOT EDIT manually. Managed by Master Factory. */';
         put '/*==================================================*/';
         put '';
@@ -84,3 +84,4 @@ data _null_;
         line = cats('%include "', folder_path, '/ETL_', Acronym, '.sas";'); put line;
         line = cats('%include "', folder_path, '/PREP_Data.sas";'); put line;
     return;
+run;
