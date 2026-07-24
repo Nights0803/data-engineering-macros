@@ -25,61 +25,62 @@ data _null_;
     
     return; 
 
-    Build_Core_Nodes:
+        Build_Core_Nodes:
         file_path = cats(folder_path, "/INT_References.sas");
         if fileexist(file_path) = 0 then do;
-            file dummy filevar=file_path replace;
-            put "/* PROGRAM: INT_References */";
-            put "%let prjtnm = " Project_Name ";";
-            put "%let abriv = " Acronym ";";
-            put "%let source_data = work." Acronym "_raw;";
-            put "%let db_target = " Target_DB_Table ";";
+            file dummy filevar=file_path;
+            put '/* PROGRAM: INT_References */';
+            line = cats('%let prjtnm = ', Project_Name, ';'); put line;
+            line = cats('%let abriv = ', Acronym, ';'); put line;
+            line = cats('%let source_data = work.', Acronym, '_raw;'); put line;
+            line = cats('%let db_target = ', Target_DB_Table, ';'); put line;
         end;
 
         file_path = cats(folder_path, "/ETL_", Acronym, ".sas");
         if fileexist(file_path) = 0 then do;
-            file dummy filevar=file_path replace;
-            put "/* PROGRAM: ETL_" Acronym " */";
-            put "/* Write custom SQL extraction here. */";
-            put "/* Ensure output table is named: &source_data */";
+            file dummy filevar=file_path;
+            line = cats('/* PROGRAM: ETL_', Acronym, ' */'); put line;
+            put '/* Write custom SQL extraction here. */';
+            put '/* Ensure output table is named: &source_data */';
         end;
 
         file_path = cats(folder_path, "/PREP_Data.sas");
         if fileexist(file_path) = 0 then do;
-            file dummy filevar=file_path replace;
-            put "/* PROGRAM: PREP_Data */";
-            put "%preset_columns(data_in=&source_data, program_acronym=&abriv, project_name=&prjtnm);";
-            put "%unique_identifier(data_in=work.preset_cols, data_out=work." Acronym "_population, date_var=" Activity_Date_Col ");";
+            file dummy filevar=file_path;
+            put '/* PROGRAM: PREP_Data */';
+            put '%preset_columns(data_in=&source_data, program_acronym=&abriv, project_name=&prjtnm);';
+            line = cats('%unique_identifier(data_in=work.preset_cols, data_out=work.', Acronym, '_population, date_var=', Activity_Date_Col, ');');
+            put line;
         end;
     return;
 
     Deploy_Verification:
         file_path = cats(folder_path, "/INIT_Verification.sas");
         if fileexist(file_path) = 0 then do;
-            file dummy filevar=file_path replace;
-            put "/* PROGRAM: INIT_Verification */";
-            put "%check_existing_data(db_table=&db_target);";
-            put "NOTE: Deployed INIT_Verification to " Short_Prog;
+            file dummy filevar=file_path;
+            put '/* PROGRAM: INIT_Verification */';
+            put '%check_existing_data(db_table=&db_target);';
+            line = cats('NOTE: Deployed INIT_Verification to ', Short_Prog); 
+            put line;
         end;
     return;
 
     Write_Playlist:
         file_path = cats(folder_path, "/Run_", Short_Prog, ".sas");
-        file dummy filevar=file_path replace; 
+        file dummy filevar=file_path; 
         
-        put "/*==================================================*/";
-        put "/* MASTER PLAYLIST: " Short_Prog "*/";
-        put "/* DO NOT EDIT manually. Managed by Master Factory. */";
-        put "/*==================================================*/";
-        put "";
-        put "%include '" folder_path "/INT_References.sas';";
+        put '/*==================================================*/';
+        line = cats('/* MASTER PLAYLIST: ', Short_Prog, '*/'); put line;
+        put '/* DO NOT EDIT manually. Managed by Master Factory. */';
+        put '/*==================================================*/';
+        put '';
+        
+        line = cats('%include "', folder_path, '/INT_References.sas";'); put line;
         
         if upcase(Use_Verification) = 'Y' then do;
-            put "%include '" folder_path "/INIT_Verification.sas';";
+            line = cats('%include "', folder_path, '/INIT_Verification.sas";'); put line;
         end;
         
-        put "%include '" folder_path "/ETL_" Acronym ".sas';";
-        put "%include '" folder_path "/PREP_Data.sas';";
+        line = cats('%include "', folder_path, '/ETL_', Acronym, '.sas";'); put line;
+        line = cats('%include "', folder_path, '/PREP_Data.sas";'); put line;
     return;
-run;
-
