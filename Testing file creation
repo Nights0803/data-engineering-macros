@@ -1,0 +1,85 @@
+proc import datafile="/sas/CBQA/intake_requests.xlsx" 
+            out=master_intake 
+            dbms=xlsx replace; 
+run;
+
+data _null_;
+    set master_intake;
+    
+    Short_Prog = strip(Short_Prog_Nm);
+    Acronym    = strip(Program_Acronym);
+    
+    length folder_path file_path $255;
+    folder_path = cats("/sas/CBQA/programs/", Short_Prog);
+    
+    if fileexist(folder_path) = 0 then do;
+        rc = dcreate(Short_Prog, "/sas/CBQA/programs/");
+        put "NOTE: Created new directory: " folder_path;
+    end;
+
+    link Build_Core_Nodes;
+    
+    if upcase(Use_Verification) = 'Y' then link Deploy_Verification;
+    
+    link Write_Playlist;
+    
+    return; 
+
+    Build_Core_Nodes:
+        file_path = cats(folder_path, "/INT_References.sas");
+        if fileexist(file_path) = 0 then do;
+            file dummy filevar=file_path replace;
+            put "/* PROGRAM: INT_References */";
+            put "%let prjtnm = " Project_Name ";";
+            put "%let abriv = " Acronym ";";
+            put "%let source_data = work." Acronym "_raw;";
+            put "%let db_target = " Target_DB_Table ";";
+        end;
+
+        file_path = cats(folder_path, "/ETL_", Acronym, ".sas");
+        if fileexist(file_path) = 0 then do;
+            file dummy filevar=file_path replace;
+            put "/* PROGRAM: ETL_" Acronym " */";
+            put "/* Write custom SQL extraction here. */";
+            put "/* Ensure output table is named: &source_data */";
+        end;
+
+        file_path = cats(folder_path, "/PREP_Data.sas");
+        if fileexist(file_path) = 0 then do;
+            file dummy filevar=file_path replace;
+            put "/* PROGRAM: PREP_Data */";
+            put "%preset_columns(data_in=&source_data, program_acronym=&abriv, project_name=&prjtnm);";
+            put "%unique_identifier(data_in=work.preset_cols, data_out=work." Acronym "_population, date_var=" Activity_Date_Col ");";
+        end;
+    return;
+
+    Deploy_Verification:
+        file_path = cats(folder_path, "/INIT_Verification.sas");
+        if fileexist(file_path) = 0 then do;
+            file dummy filevar=file_path replace;
+            put "/* PROGRAM: INIT_Verification */";
+            put "%check_existing_data(db_table=&db_target);";
+            put "NOTE: Deployed INIT_Verification to " Short_Prog;
+        end;
+    return;
+
+    Write_Playlist:
+        file_path = cats(folder_path, "/Run_", Short_Prog, ".sas");
+        file dummy filevar=file_path replace; 
+        
+        put "/*==================================================*/";
+        put "/* MASTER PLAYLIST: " Short_Prog "*/";
+        put "/* DO NOT EDIT manually. Managed by Master Factory. */";
+        put "/*==================================================*/";
+        put "";
+        put "%include '" folder_path "/INT_References.sas';";
+        
+        if upcase(Use_Verification) = 'Y' then do;
+            put "%include '" folder_path "/INIT_Verification.sas';";
+        end;
+        
+        put "%include '" folder_path "/ETL_" Acronym ".sas';";
+        put "%include '" folder_path "/PREP_Data.sas';";
+    return;
+run;
+
